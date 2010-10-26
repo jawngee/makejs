@@ -146,6 +146,8 @@ I wrote this in a day because I couldn't find something, other than Apache Ant, 
 
 Yes, it's written in PHP.
 
+For further info see:  http://interfacelab.com/introducing-makejs
+
 
 
 
