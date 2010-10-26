@@ -1,0 +1,495 @@
+#!/usr/bin/php
+<?
+/**
+ * Copyright (c) 2010, Jon Gilkison and Trunk Archive Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice,
+ *   this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * This is a modified BSD license (the third clause has been removed).
+ * The BSD license may be found here:
+ * 
+ * http://www.opensource.org/licenses/bsd-license.php
+ */
+
+/**
+ * Parses arguments into commands/options and switches
+ */
+function parse_args()
+{
+	global $argv;
+	$args=array();
+	$switches=array();
+	
+	$a=array_slice($argv,1);
+	$vals=array();
+	for($i=0; $i<count($a);$i++)
+		if(!preg_match('#--([^=]*)(?:[=]*)(.*)#',$a[$i],$vals))
+			$args[]=$a[$i];
+		else
+			$switches[$vals[1]]=($vals[2]=='') ? true : $vals[2];
+			
+	return array(
+		'args'=>$args,
+		'switches'=>$switches
+	);
+}
+
+/**
+ * Fetches files matching a wildcard pattern
+ */
+function get_files($filename)
+{
+	if (is_file($filename))
+		return array($filename);
+		
+	$pathparts=explode('/',$filename);
+	$wildcard=array_pop($pathparts);
+	$path=implode('/',$pathparts).'/';
+	
+	if (!is_dir($path))
+		return array();
+
+	$result=array();
+	if ($handle = opendir($path)) {
+	    while (false !== ($filen = readdir($handle))) {
+	        if ($filen != "." && $filen != ".." && (strpos($filen,'._')!==0) && is_file($path.'/'.$filen) && fnmatch($wildcard,$filen) ) {
+	            $result[]=$path.$filen;
+	        }
+	    }
+	    closedir($handle);
+	}
+	
+	return $result;
+}
+
+/**
+ * Static class for watching file modifications
+ */
+final class Watcher
+{
+	static $watches=array();
+	static $inotify_handle=null;
+	
+	public static function InitWatch()
+	{
+		if (!self::$inotify_handle)
+			self::$inotify_handle=inotify_init();
+	}
+	
+	public static function AddWatch($path,$make)
+	{
+		$w=inotify_add_watch(self::$inotify_handle,$path,IN_CLOSE_WRITE);
+		self::$watches[$w]=array(
+			'file'=>$path,
+			'make'=>$make
+		);
+	}
+	
+	public static function Watch()
+	{
+		echo "Watching ...\n";
+		while(true)
+		{
+			if (inotify_queue_len(self::$inotify_handle)>0)
+			{
+				$events=inotify_read(self::$inotify_handle);
+				foreach($events as $event)
+				{
+					echo "'".self::$watches[$event['wd']]['file']."' modified.\n";
+					self::$watches[$event['wd']]['make']->build();
+				}
+			}
+			
+			sleep(1);
+		}
+	}
+}
+
+/**
+ * Main Make class
+ */
+class Make 
+{
+	var $conf=null;
+	var $prereq=array();
+	var $basedir=null;
+	var $confpath=null;
+	var $destdir=null;
+	var $version=null;
+	var $dist=null;
+	var $js=array();
+	var $css=array();
+	var $previous_version='';
+	
+	
+	function __construct($conf,$dist,$dest,$watch=false)
+	{
+		// make sure we have all the required shit
+		if (!function_exists('yaml_parse'))
+			$this->error("Missing libyaml extension.");
+		
+		// remember some basic stuff
+		$this->dist=$dist;
+		$this->basedir=realpath(dirname($conf)).'/';
+		$this->confpath=$this->basedir.$conf;
+		
+		if (!is_dir($dest))
+			mkdir($dest,0777,true);
+			
+		$this->destdir=realpath($dest).'/';
+
+		// parse the make.conf file
+		$makeconf=yaml_parse(file_get_contents($conf));
+		if (isset($makeconf[$dist]))
+		{
+			$this->conf=$makeconf[$dist];
+			
+			// load up any pre-req's
+			if (isset($this->conf['prereq']))
+				foreach($this->conf['prereq'] as $pre)
+					$this->prereq[$pre]=new Make($conf,$pre,$dest,$watch);
+					
+			// store the current version
+			$this->version=$this->conf['version'];
+			
+			// if we are watching, we need to add the files to watch
+			if ($watch)
+			{
+				// get the files to compress to add them to the watch.
+				if (isset($this->conf['build']['compress']))
+					foreach($this->conf['build']['compress']['files'] as $key=>$files)
+						foreach($files as $file)
+						{
+							$realfiles=get_files($this->basedir.$file);
+							foreach($realfiles as $real)
+								Watcher::AddWatch($real,$this);
+						}
+			}
+		}
+		else
+			$this->error("No build target named '$dist' found in '$conf'.");
+	}
+	
+	/**
+	 * Displays an error and dies
+	 */
+	function error($msg)
+	{
+		echo $msg."\n";
+		die;
+	}
+	
+	/**
+	 * Displays a warning message.
+	 */
+	function warn($msg)
+	{
+		echo "WARNING: ".$msg."\n";
+	}
+	
+	/**
+	 * Replaces BEGIN END blocks with script and css tags
+	 */
+	protected function _alter($content)
+	{
+		$replacement='';
+		foreach($this->js as $script)
+			$replacement.="<script type='text/javascript' src='".str_replace('{VERSION}',$this->version,$script)."'></script>\n\t\t";
+
+		foreach($this->css as $stylesheet)
+			$replacement.="<link rel='stylesheet' type='text/css' href='".str_replace('{VERSION}',$this->version,$stylesheet)."' />\n\t\t";
+
+		$regex="#\<\!\-\-\s*BEGIN\s*{$this->dist}\s*\-\-\>(.*)\<\!\-\- END {$this->dist} \-\-\>#is";
+		$matches=array();
+		preg_match_all($regex,$content,$matches,PREG_OFFSET_CAPTURE);
+		foreach($matches[0] as $match)
+			$content=str_replace($match[0],$replacement,$content);
+			
+		return $content;
+	}
+	
+	/**
+	 * Performs the compress build phase.
+	 * Concatenates a list of files together and the compresses them.
+	 */
+	protected function compress($settings)
+	{	
+		// compress
+		foreach($settings['files'] as $key=>$files)
+		{
+			$result='';
+			$type=array_pop(explode('.',$key));
+			foreach($files as $file)
+			{
+				$realfiles=get_files($this->basedir.$file);
+				foreach($realfiles as $real)
+					$result.=file_get_contents($real)."\n";
+			}
+			
+			// create any intermediate directories
+			$keyparts=explode('/',$key);
+			array_pop($keyparts);
+			$outpath=$this->destdir.implode('/',$keyparts);
+			if (!is_dir($outpath))
+				mkdir($outpath,0777,true);
+			
+			$final=$this->destdir.$key;
+
+			// replace the version if any
+			if ($this->version)
+			{
+				$oldver=str_replace('{VERSION}',$this->previous_version,$final);
+				$final=str_replace('{VERSION}',$this->version,$final);
+			}
+			
+			// dump to temp and compress it
+			file_put_contents('temp.'.$type,$result	);
+			
+			$arguments='';
+			
+			if (isset($settings['nomunge']) && $settings['nomunge'])
+				$arguments.='--nomunge ';
+			if (isset($settings['preserve-semi']) && $settings['preserve-semi'])
+				$arguments.='--preserve-semi ';
+			if (isset($settings['optimize']) && $settings['optimize']==FALSE)
+				$arguments.='--disable-optimizations ';
+			if (isset($settings['line-break']) && $settings['line-break'])
+				$arguments.='--line-break '.$settings['line-break'];
+				
+			echo "Compressing '$final'.\n";
+			
+			if (!isset($settings['skip']) || $settings['skip']==false)
+				`yui-compressor temp.$type $arguments -o $final`;
+			else
+				copy("temp.$type",$final);
+				
+			if (file_exists($oldver))
+				unlink($oldver);
+				
+			unlink('temp.'.$type);
+			
+			if ($type=='js')
+				$this->js[]=$key;
+			else if ($type=='css')
+				$this->css[]=$key;
+		}	
+	}
+	
+	/**
+	 * Executes the copy files phase of the build.
+	 */
+	protected function copy($settings)
+	{
+		foreach($settings['files'] as $source=>$destDir)
+		{
+			$outdir=$this->destdir.$destDir;
+			echo "$outdir\n";
+			if (!is_dir($outdir))
+				mkdir($outdir,0777,true);
+				
+			$realfiles=get_files($this->basedir.$source);
+			foreach($realfiles as $real)
+			{
+				$filename=array_pop(explode('/',$real));
+				$type=array_pop(explode('.',$filename));
+				
+				if ($type=='js')
+					$this->js[]=$destDir.$filename;
+				else if ($type=='css')
+					$this->css[]=$destDir.$filename;
+			
+				echo "Copying '$filename'.\n";
+				
+				copy($real,$outdir.$filename);
+			}
+		}
+	}
+	
+	/**
+	 * Performs the alter phase which will take input files and replace certain blocks with the 
+	 * result of the build, eg the compressed and versioned css/js files.
+	 */
+	protected function alter($settings)
+	{
+		foreach($settings['files'] as $source=>$destDir)
+		{
+			$outdir=$this->destdir.$destDir;
+			if (!is_dir($outdir))
+				mkdir($outdir,0777,true);
+
+			$realfiles=get_files($this->basedir.$source);
+			foreach($realfiles as $real)
+			{
+				echo "Altering '$real'.\n";
+				
+				$content=file_get_contents($real);
+				
+				foreach($this->prereq as $req)
+					$content=$req->_alter($content);
+				$content=$this->_alter($content);
+				
+				$filename=array_pop(explode('/',$real));
+				file_put_contents($outdir.$filename,$content);
+
+			}
+		}
+	}
+	
+	/**
+	 * Builds the cache manifest.
+	 */
+	protected function _manifest($settings=null,$generate_header=true)
+	{
+		$manifest='';
+		
+		if ($generate_header)
+		{
+			$manifest="CACHE MANIFEST\n";
+			$manifest.="# VERSION: ".$this->version."\n\n";
+		}
+		
+		foreach($this->prereq as $req)
+			$manifest.=$req->_manifest(null, false);
+
+		if (($settings==null) && (isset($this->conf['build']['manifest'])))
+			$settings=$this->conf['build']['manifest'];
+			
+		if ($settings==null)
+			return;
+			
+		foreach($settings['cache'] as $file)
+		{
+			$files=get_files($this->destdir.str_replace('{VERSION}',$this->version,$file));
+			foreach($files as $relfile)
+				$manifest.=str_replace($this->destdir,'',$relfile)."\n";
+		}
+				
+		return $manifest;
+	}
+	
+	/**
+	 * Builds the cache manifest.
+	 */
+	protected function manifest($settings=null,$generate_header=true)
+	{
+		if (isset($settings['name']))
+		{
+			echo "Building manifest '{$settings['name']}'.\n";
+			
+			$manifest=$this->_manifest($settings,$generate_header);
+			file_put_contents($this->destdir.$settings['name'],$manifest);
+		}
+	}
+	
+	/**
+	 * Builds the project.
+	 */
+	function build()
+	{
+		foreach($this->prereq as $req)
+			$req->build();
+		
+		// increment the build version
+		// this assumes/requires that your version be in the form of
+		// major.minor.build
+		if ($this->conf['version'])
+		{
+			$conf=yaml_parse(file_get_contents($this->confpath));
+			
+			$this->previous_version=$this->conf['version'];
+			
+			$version=explode('.',$this->conf['version']);
+			
+			if (count($version)>0)
+				$version[count($version)-1]++;
+				
+			$conf[$this->dist]['version']=$this->version=implode('.',$version);
+			
+			file_put_contents($this->confpath,yaml_emit($conf));
+			
+			echo "Building '{$this->dist}' Version:".$this->version.".\n";
+			
+		}
+		else
+			echo "Building '{$this->dist}'.\n";
+		
+		foreach($this->conf['build'] as $key=>$settings)
+			switch($key)
+			{
+				case 'compress':
+					$this->compress($settings);
+					break;
+				case 'copy':
+					$this->copy($settings);
+					break;
+				case 'alter':
+					$this->alter($settings);
+					break;
+				case 'manifest':
+					$this->manifest($settings,true);
+					break;
+			}
+	}
+}
+
+/**
+ * Startup
+ */
+
+$args=parse_args();
+
+if (count($args['args'])<=1)
+{
+	echo "Please specify a target to build and a destination path.\n";
+	echo "USAGE: make {target} {dest}\n";
+	die;
+}
+
+if (count($args['args'])==2)
+{
+	if (!file_exists('makejs.conf'))
+	{
+		echo "Missing makejs.conf.  Please make sure this file exists.";
+		die;
+	}
+	
+	$buildconf='makejs.conf';
+	$dist=$args['args'][0];
+	$dest=$args['args'][1];
+}
+else
+{
+	$buildconf=$args['args'][0];
+	$dist=$args['args'][1];
+	$dest=$args['args'][2];
+}
+
+$watch=(isset($args['switches']['watch'])) && ($args['switches']['watch']!=='false');
+if ($watch)
+	Watcher::InitWatch();
+
+$make=new Make($buildconf,$dist,$dest,$watch);
+$make->build();
+
+if ($watch)
+	Watcher::Watch();

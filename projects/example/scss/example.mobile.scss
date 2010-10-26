@@ -1,0 +1,427 @@
+@import 'theme';
+@import 'mixins';
+
+/* styles */
+
+* {
+	font-family: $font;
+}
+
+html {
+	height:100%;
+}
+
+body {
+	-webkit-font-smoothing: subpixel-antialiased;
+	height:100%;
+	@include gradient($bgColor,$bgGradStart,$bgGradEnd);
+}
+
+a { 
+	text-decoration:none; 
+	color:$textColor; 
+}
+
+.red {
+	color:red;
+}
+
+.green {
+	color: green;
+}
+
+h1 {
+	padding:10px;
+	font-size:24px;
+	color:$textColor;
+	@include text-shadow;
+}
+
+p {
+	font-size:14px;
+	color:$textColor;
+	@include text-shadow;
+	display:block;
+	margin-bottom:10px;
+}
+
+@mixin li-default($padding:10px) {
+    border-top: 1px solid $liBorderTop;
+    border-bottom: $liBorderBottom;
+    list-style-type: none;
+    padding: $padding $padding $padding $padding;
+	@include gradient($defaultGradientStart,$defaultGradientStart,$defaultGradientEnd);
+    overflow: hidden;
+
+	a {
+	    color: $textColor;
+	    text-decoration: none;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+	    overflow: hidden;
+	    padding: 12px 10px 12px 10px;
+	    margin: -10px;
+	    -webkit-tap-highlight-color: rgba(0,0,0,0);
+	    @include text-shadow;
+	}
+}
+
+@mixin li-arrow($color) {
+    background-color: $color !important;
+    background-image: url(../i/chevron.png) !important;
+    background-position: right center !important;
+    background-repeat: no-repeat !important;
+ 
+    a {
+    	padding: 12px 22px 12px 10px;
+	}
+}
+
+ul li.arrow {
+	@include li-arrow($defaultGradientStart);
+}
+
+form ul {
+    @include rounded-all(8px);
+    -webkit-box-shadow: rgba(0,0,0,.3) 1px 1px 3px;
+	margin:5px;
+	
+	li {
+		@include li-default(0px);
+		color:$textColor;
+		white-space:nowrap;
+	}
+
+	li:first-child, li:first-child a {
+    	border-top: 0;
+    	@include rounded(top-left,8px);
+    	@include rounded(top-right,8px);
+	}
+	
+	li:last-child, li:last-child a {
+    	@include rounded(bottom-left,8px);
+    	@include rounded(bottom-right,8px);
+	}
+}
+
+
+ul.rounded {
+	
+    @include rounded-all(8px);
+    -webkit-box-shadow: rgba(0,0,0,.3) 1px 1px 3px;
+	margin:5px;
+
+	li {
+		@include li-default(10px);
+		color:$textColor;
+	}
+
+	li:first-child, li:first-child a {
+    	border-top: 0;
+    	@include rounded(top-left,8px);
+    	@include rounded(top-right,8px);
+	}
+	
+	li:last-child, li:last-child a {
+    	@include rounded(bottom-left,8px);
+    	@include rounded(bottom-right,8px);
+	}
+}
+
+ul.list {
+	color:#000;
+	margin-top:1px;
+    -webkit-box-shadow: rgba(0,0,0,.3) 1px 1px 3px;
+	
+	li {
+		color:$textColor;
+		border-bottom:1px solid black;
+		background:#333;
+		cursor: pointer;
+	}
+	
+	li.none
+	{
+		padding:10px;
+		background:#3a3a3a;
+	    background-image: url(../i/remove.png) !important;
+	    background-position: 10px center !important;
+	    background-repeat: no-repeat !important;
+		padding-left:45px;
+		color:#AAA;
+	}
+	
+	li:first-child, li:first-child a  {
+    	border-top: 0;
+	}
+	
+	li:last-child, li:last-child a {
+	}
+}
+
+label {
+	display:inline-block;
+	padding:10px;
+	width:86px;
+	font-size:14px;
+	margin:1px;
+	font-weight:100;
+	text-transform: uppercase;
+	text-align:right;
+	color:$labelTextColor;
+}
+
+input[type='checkbox'] {
+	margin:10px;
+	margin-left:111px;
+}
+
+input[type='email'],input[type='password'],input[type='text'] {
+	background:none;
+	border:none;
+	display:inline-block;
+	min-height:45px;
+	margin:4px;
+	padding:0px;
+	padding-left:5px;
+	font-size:14px;
+	color:$textColor;
+	background:$inputBgColor;
+	width:188px;
+}
+
+navtitle {
+	position:absolute;
+	left:70px;
+	right:70px;
+	text-align:center;
+	color:#fff;
+	font-size:18px;
+	padding:11px;
+	@include text-shadow;
+    text-overflow: ellipsis;
+}
+
+navigator
+{
+	@include gradient($defaultGradientStart,$defaultGradientStart,$defaultGradientEnd);
+	position:relative;
+	width:100%;
+	height:45px;
+	margin-bottom:5px;
+	border-top:1px solid rgba(255, 255, 255, 0.3);
+	border-bottom:1px solid rgba(51, 51, 51, 0.3);
+
+	a {
+		display:inline-block;
+		padding:8px;
+		font-size:13px;
+		@include gradient($buttonGradientStart,$buttonGradientStart,$buttonGradientEnd);
+	 	@include rounded-all(5px);
+		border:1px solid #333;
+		-webkit-box-shadow:0 1px 0 rgba(255, 255, 255, 0.3);
+		@include text-shadow;
+ 	}
+
+	a.back {
+		position:absolute;
+		left:5px;
+		top:5px;
+		padding-left:22px;
+		@include gradientWithImage('../i/back.png',$buttonGradientStart,$buttonGradientEnd);
+		background-position:left center;
+		background-repeat: no-repeat;
+	}
+
+	a.editButton {
+		position:absolute;
+		top:5px;
+		right:5px;
+	}
+}
+
+div.buttons {
+	margin:10px;
+	text-align:right;
+	a {
+		margin-left:10px;
+	}
+}
+
+a.button {
+	display:inline-block;
+	-webkit-tap-highlight-color:rgba(255,0,0,0.5);
+	padding:16px;
+	font-size:16px;
+	font-weight:800;
+	padding-top:16px;
+	padding-bottom:16px;
+	margin-bottom:8px;
+	@include gradient($buttonGradientStart,$buttonGradientStart,$buttonGradientEnd);
+ 	@include rounded-all(7px);
+	border:1px solid #111;
+	-webkit-box-shadow:0 1px 0 rgba(255, 255, 255, 0.2);
+	@include text-shadow;
+}
+
+a.inline { 
+	display: inline; 
+}
+
+grid {
+	display:block;
+	text-align:center;
+	margin:5px;
+	
+	table {
+		width:100%;
+		
+		td {
+		}
+	}
+	
+	a {
+		@extend a.button;
+		font-size:15px;
+		display:block;
+		text-align:left;
+		padding:16px;
+		padding-left:40px;
+		margin:5px;
+		
+	}
+	
+	a.buyin { 
+		@include gradientWithImage('../i/buyin.png',$buttonGradientStart,$buttonGradientEnd); 
+		background-position:left center;
+		background-repeat: no-repeat;
+	}
+	a.tournament { 
+		@include gradientWithImage('../i/buyin.png',$buttonGradientStart,$buttonGradientEnd); 
+		background-position:left center;
+		background-repeat: no-repeat;
+	}
+	a.expense { 
+		@include gradientWithImage('../i/expense.png',$buttonGradientStart,$buttonGradientEnd); 
+		background-position:left center;
+		background-repeat: no-repeat;
+	}
+	a.browser { 
+		@include gradientWithImage('../i/browser.png',$buttonGradientStart,$buttonGradientEnd); 
+		background-position:left center;
+		background-repeat: no-repeat;
+	}
+	
+}
+
+picker {
+	a {
+		display: inline-block;
+		width:100%;
+	}
+}
+
+div.list-item {
+	position:relative;
+	padding:10px;
+	clear:both;
+	height:36px;
+	
+ 	div.streak-image {
+		position:relative;
+		float:left;
+		width:12px;
+		margin-right:10px;
+		display:block;
+		height:100%;
+		
+		img {
+			margin-top:10px;
+			vertical-align: middle;
+		}
+	}
+	
+	div.info {
+		float:left;
+		
+		h1 {
+			padding:0px;
+			margin:0px;
+			font-size:18px;
+		}
+		
+		h2 {
+			padding:0px;
+			margin:0px;
+			font-weight:200;
+			font-size:14px;
+		}
+	}
+	
+	div.result
+	{
+		position:absolute;
+		right:10px;
+		top:20px;
+	}
+
+	div.win {
+		color:green;
+	}
+	
+	div.loss {
+		color:red;
+	}
+}
+
+div.cashDisplay, #timer {
+	@include gradient(#111,#111,#000);
+	font-weight:800;
+	font-size:72px;
+	padding:15px;
+	text-align:center;
+	color:white;
+	margin-bottom:5px;
+}
+
+div.session-info {
+	background:#000;
+	font-size:14px;
+	height:32px;
+	text-transform:uppercase;
+	color:#aaa;
+	position:relative;
+	
+	div {
+		position:absolute;
+		width:100%;
+		padding:5px;
+		text-align:center;
+	}
+	
+	div:first-child {
+		left:0px;
+		text-align:left;
+	}
+	
+	div:last-child {
+		right:0px;
+		text-align:right;
+	}
+	
+
+}
+
+div.current-session {
+	margin-bottom:10px;
+}
+
+grid.buyin {
+	td { padding:0px; }
+	a {
+		margin:2px;
+		padding:5px 3px;
+		text-align:center;
+		font-size:24px;
+	}
+}

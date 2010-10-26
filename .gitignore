@@ -1,0 +1,9 @@
+.DS_Store
+._.gitignore
+.buildpath
+.project
+.settings/org.eclipse.php.core.prefs
+app/conf/._environment.conf/._.gitignore
+.AppleDouble/
+:2e*
+._*

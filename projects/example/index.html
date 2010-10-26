@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Example</title>
+		
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta name = "viewport" content = "user-scalable=no, width = device-width">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+		<link rel="apple-touch-icon" href="/i/mobile/icon.png"/>
+		<link rel="apple-touch-startup-image" href="/i/mobile/startup.png">
+
+
+		<!-- BEGIN glamrock -->
+		<script type="text/javascript" src="../glamrock/js/jquery-1.4.3.min.js"></script>
+		<script type="text/javascript" src="../glamrock/js/jquery.tmpl.min.js"></script>
+
+		<script type="text/javascript" src="../glamrock/js/date.format.1.2.3.js"></script>
+		<script type="text/javascript" src="../glamrock/js/iscroll.js"></script>
+		<script type="text/javascript" src="../glamrock/js/jquery.hashchange.js"></script>
+		<script type="text/javascript" src="../glamrock/js/sprintf.js"></script>
+		
+		
+		<script type="text/javascript" src="../glamrock/js/glam.rock.js"></script>
+		<script type="text/javascript" src="../glamrock/js/glam.rock.helpers.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="../glamrock/css/reset.css" />
+		<link rel="stylesheet" type="text/css" href="../glamrock/css/glam.rock.css" />
+		<!-- END glamrock -->
+		
+
+		<!-- BEGIN example -->
+		<link rel="stylesheet" type="text/css" href="css/example.mobile.css" />
+		
+		<script type="text/javascript" src="js/model/currentSession.js"></script>
+		<script type="text/javascript" src="js/controllers/app.js"></script>
+		<script type="text/javascript" src="js/controllers/home.js"></script>
+		<script type="text/javascript" src="js/controllers/login.js"></script>
+		<script type="text/javascript" src="js/controllers/register.js"></script>
+		<!-- END example -->
+		
+		<script>
+			// start up the app using these settings.
+			document.addEventListener('DOMContentLoaded',function(){
+				$('app').startApp({
+					touchCapable: (/iPhone|iPad|Android/.test(navigator.userAgent))
+				});
+			});
+			
+		</script>
+	</head>
+	<body>
+
+		
+		<app start="#home" navigator="true">
+			
+			<!-- home screen -->
+			<view id="home" title="Example">
+				<h1>Example</h1>
+				<ul class="rounded">
+					<li class="arrow"><a href="#login">Log In</a></li>
+					<li class="arrow"><a href="#register">Sign Up</a></li>
+				</ul>
+			</view>
+			
+			<!-- login screen -->
+			<view id="login" title="Log In">
+				<form method="post" action="/login/validate">
+					<ul>
+						<li><label for="email">Email</label><input type="email" name="email" placeholder="Email Address" /></li>
+						<li><label for="password">Password</label><input type="password" name="password" /></li>
+					</ul>
+					<div class="buttons">
+						<a href="#forgot" class="button">Forgot Password</a>
+						<a href="!login" class="button">Log In</a>
+					</div>
+				</form>
+			</view>
+			
+			<!-- register screen -->
+			<view id="register" title="Sign Up">
+				<form method="post" action="/signup/validate">
+					<ul>
+						<li><label for="email">Email</label><input type="email" name="email" placeholder="Email Address" /></li>
+						<li><label for="password">Password</label><input type="password" name="password" /></li>
+						<li><input type="checkbox" name="terms" />I have read the <a class="inline" href='#terms'>Terms</a>.</li>
+						<li><input type="checkbox" name="age" />I am over the age of 18.</li>
+					</ul>
+					<div class="buttons">
+						<a href="#forgot" class="button">Forgot Password</a>
+						<a href="!login" class="button">Log In</a>
+					</div>
+				</form>
+			</view>	
+			
+			<view id="terms" title="Terms &amp; Conditions">
+				<scrollarea>
+					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus malesuada urna ac nisi suscipit viverra. Praesent mollis ultrices odio et blandit. Donec interdum nulla id metus aliquam nec viverra purus semper. Sed nunc massa, faucibus at varius ac, tincidunt ut libero. In volutpat cursus porttitor. Aliquam dui tortor, ultrices ac ultrices a, mattis id turpis. Ut iaculis tempus dui ornare tincidunt. Nulla elementum erat rutrum massa euismod consectetur. Aliquam eget interdum mi. Aenean risus urna, dapibus vitae pretium in, lacinia id odio. Nulla purus mauris, ultrices eu facilisis eu, ornare quis justo. Vivamus velit sapien, auctor at ultricies et, ullamcorper et quam. Duis ultricies blandit euismod. Nulla id turpis eu nibh ultrices condimentum.
+					</p>
+					<p>
+					Pellentesque nec velit eget ante ullamcorper scelerisque sit amet vitae dolor. Suspendisse congue dui condimentum erat faucibus ut cursus justo lacinia. Nunc non lorem eget mi consectetur fermentum vel et neque. Proin sed nisl eget mi tempor bibendum vitae vel nisl. Morbi tempus cursus facilisis. Mauris a ligula lorem, ultrices scelerisque ligula. Donec egestas fermentum orci eu pulvinar. Nullam vitae enim metus, interdum luctus felis. In dictum sollicitudin neque, ut consequat arcu tempus et. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam ante eros, eleifend non consequat dapibus, cursus sed urna. Etiam viverra posuere justo at varius. Pellentesque luctus, metus nec pellentesque aliquet, dolor lorem fermentum libero, sed auctor eros felis quis risus. Vestibulum ultrices sapien a dolor euismod mattis aliquam augue molestie. Nam malesuada rutrum justo id tincidunt.
+					</p>
+				</scrollarea>
+			</view>
+
+			
+			<!-- dashboard screen -->
+			<view id="dashboard" title="Dashboard" showBack="false">
+				<navButton title="Log Out" href="!logout"></navButton>
+				
+				<div style="background:black; height:160px; margin:-5px; margin-bottom:10px;">&nbsp;</div>
+				<grid cols="2">
+					<a class="buyin" href="#newSession">Cash Game</a>
+					<a class="tournament" href="#newTournament">Tournament</a>
+					<a class="expense" href="#newExpense">Expense</a>
+					<a class="browser" href="#browser">Browse</a>
+				</grid>
+			</view>
+	
+		</app>
+	</body>
+</html>
