@@ -38,7 +38,7 @@ To see the examples, build them:
 
 You can also make makejs watch the files and rebuild when they are modified by using the --watch switch:
 
-    makejs example build/example
+    makejs example build/example --watch
 
 
 
@@ -146,7 +146,7 @@ I wrote this in a day because I couldn't find something, other than Apache Ant, 
 
 Yes, it's written in PHP.
 
-For further info see:  http://interfacelab.com/introducing-makejs
+For further info see:  [Introducing makejs](http://interfacelab.com/introducing-makejs)
 
 
 
