@@ -1,0 +1,89 @@
+{
+	"glamrock": {
+		"version": "0.0.84",
+		"build": {
+			"copy": {
+				"files": {
+					"projects\/glamrock\/js\/jquery-1.4.3.min.js": "js\/",
+					"projects\/glamrock\/js\/jquery.tmpl.min.js": "js\/",
+					"projects\/glamrock\/templates\/*.html": "templates\/"
+				}
+			},
+			"compress": {
+				"skip": false,
+				"nomunge": false,
+				"preserve-semi": false,
+				"optimize": true,
+				"line-break": 1800,
+				"files": {
+					"js\/glam.rock.min.{VERSION}.js": [
+						"projects\/glamrock\/js\/iscroll.js",
+						"projects\/glamrock\/js\/sprintf.js",
+						"projects\/glamrock\/js\/jquery.hashchange.js",
+						"projects\/glamrock\/js\/date.format.1.2.3.js",
+						"projects\/glamrock\/js\/glam.rock.js",
+						"projects\/glamrock\/js\/glam.rock.helpers.js",
+						"projects\/glamrock\/js\/controls\/*.js"
+					],
+					"css\/glam.rock.min.{VERSION}.css": [
+						"projects\/glamrock\/css\/reset.css",
+						"projects\/glamrock\/css\/glam.rock.css"
+					]
+				}
+			},
+			"manifest": {
+				"cache": [
+					"js\/glam.rock.min.{VERSION}.js",
+					"css\/glam.rock.min.{VERSION}.css",
+					"js\/jquery-1.4.3.min.js",
+					"js\/jquery.tmpl.min.js"
+				]
+			}
+		}
+	},
+	"example": {
+		"version": "0.0.84",
+		"prereq": [
+			"glamrock"
+		],
+		"build": {
+			"compress": {
+				"skip": false,
+				"nomunge": false,
+				"preserve-semi": false,
+				"optimize": true,
+				"line-break": 1800,
+				"files": {
+					"js\/example.mobile.min.{VERSION}.js": [
+						"projects\/example\/js\/controllers\/*.js",
+						"projects\/example\/js\/model\/*.js"
+					],
+					"css\/example.mobile.min.{VERSION}.css": [
+						"projects\/example\/css\/example.mobile.css"
+					]
+				}
+			},
+			"copy": {
+				"files": {
+					"projects\/example\/templates\/*.*": "templates\/",
+					"projects\/example\/i\/*.*": "i\/"
+				}
+			},
+			"alter": {
+				"files": {
+					"projects\/example\/index.html": ""
+				}
+			},
+			"manifest": {
+				"name": "example.manifest",
+				"cache": [
+					"index.html",
+					"css\/reset.css",
+					"css\/example.mobile.min.{VERSION}.css",
+					"js\/example.mobile.min.{VERSION}.js",
+					"i\/*.*"
+				]
+			}
+		}
+	}
+}
